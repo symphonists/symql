@@ -95,3 +95,7 @@ Rather than entries returned as they would be through a Data Source, this option
 
 ### `RETURN_FIELDS`
 Returns an array of Field objects which can be individually modified and re-saved.
+
+## Known bugs
+
+* select 'system:count' not yet implemented, still looks for 'count'
