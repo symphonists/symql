@@ -24,10 +24,6 @@ Class SymQL {
 		
 		require_once('class.symqlquery.php');
 		
-		if (!$context) {
-			
-		}
-		
 		$this->entryManager = new EntryManager($context);
 		$this->sectionManager = $this->entryManager->sectionManager;
 		$this->fieldManager = $this->entryManager->fieldManager;
@@ -316,7 +312,7 @@ Class SymQL {
 					break;
 					
 					case SymQL::RETURN_FIELDS:
-						die('return entries');
+						$result['entries'][$entry->get('id')] = $section_fields[$field_id];
 					break;
 					
 					case SymQL::RETURN_XML:
