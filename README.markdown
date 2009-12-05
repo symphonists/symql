@@ -100,3 +100,4 @@ Returns an array of Field objects which can be individually modified and re-save
 
 * select 'system:count' not yet implemented, still looks for 'count'
 * serialising XMLElement into an array doesn't produce a very clean array
+* RETURN_FIELDS does and should not return "Fields". It returns ENTRIES! Incorrectly named, needs reworking.
