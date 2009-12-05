@@ -99,3 +99,4 @@ Returns an array of Field objects which can be individually modified and re-save
 ## Known bugs
 
 * select 'system:count' not yet implemented, still looks for 'count'
+* serialising XMLElement into an array doesn't produce a very clean array
