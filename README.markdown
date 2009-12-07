@@ -1,7 +1,7 @@
 # SymQL
-Version: 0.1  
+Version: 0.2  
 Author: [Nick Dunn](http://nick-dunn.co.uk)  
-Build Date: 05 December 2009  
+Build Date: 07 December 2009  
 Requirements: Symphony integration branch
 
 ## Usage
@@ -9,7 +9,11 @@ Include the SymQL class:
 
 	require_once(EXTENSIONS . '/symql/lib/class.symql.php');
 
-Create a new SymQL passing it front or backend context:
+Create a new SymQL:
+
+	$symql = new SymQL();
+
+SymQL will try to establish its own context (instance of `Symphony` either as `Frontend` or `Administration`) but if you wish you can pass an explicit context:
 
 	$symql = new SymQL(Frontend::instance());
 
@@ -57,11 +61,11 @@ System parameters can also be filtered on, as with a normal Data Source:
 	$query->where('system:date', 'today);
 
 ### `orderby`
-Specify sort and direction. Defaults to `system:id` in `desc` order.
+Specify sort and direction. Defaults to `system:id` in `desc` order. Use a valid field ID, handle or system pseudo-field (system:id, system:date). Direction values are 'asc', 'desc' or 'rand'. Case insensitive. 
 
 	$query->orderby('system:date', 'asc');
 
-	$query->orderby('name', 'desc');
+	$query->orderby('name', 'DESC');
 
 ### `perPage`
 Number of entries to limit by. If you don't want to use pagination, use this as an SQL `LIMIT`.
@@ -76,28 +80,28 @@ Which page of entries to return.
 ## Run the query!
 To run the SymQLQuery object, pass it to the SymQL's `run` method:
 
-	$result = $symql->run($query);
+	$result = $symql->run($query); // returns an XMLElement of matching entries
 
 SymQL can return entries in four different flavours depending on how you want them. Pass the output mode as the second argument to the `run` method. For example:
 
-	$result = $symql->run($query, SymQL::RETURN_XML); // XML is the default
+	$result = $symql->run($query, SymQL::RETURN_ENTRY_OBJECTS); // returns an array of Entry objects
 
- On the menu today:
+* `RETURN_XML` (default) returns an XMLElement object, almost identical to a Data Source output
+* `RETURN_ARRAY` returns the same structure as RETURN_XML above, but the XMLElement is converted into a PHP array
+* `RETURN_RAW_COLUMNS` returns the raw column values from the database for each field
+* `RETURN_ENTRY_OBJECTS` returns an array of Entry objects, useful for further processing
 
-### `RETURN_XML` (default)
-Returns an XMLElement object, like a Data Source.
-
-### `RETURN_ARRAY`
-Returns the same structure as XML, but as a PHP array instead.
-
-### `RETURN_RAW`
-Rather than entries returned as they would be through a Data Source, this options returns the raw column values from the database.
-
-### `RETURN_FIELDS`
-Returns an array of Field objects which can be individually modified and re-saved.
-
-## Known bugs
-
-* select 'system:count' not yet implemented, still looks for 'count'
+## Known issues
+* SymQL should really be a static class. Need to think how it maintains $context without something like DatabaseManpultor's "associateParent" ugliness
 * serialising XMLElement into an array doesn't produce a very clean array
-* RETURN_FIELDS does and should not return "Fields". It returns ENTRIES! Incorrectly named, needs reworking.
+
+## Changelog
+
+* 0.2, 07 December 2009
+	* changed `count` to `select:count` to avoid naming conflicts
+	* renamed RETURN_FIELDS to RETURN_ENTRY_OBJECTS and RETURN_RAW to RETURN_RAW_COLUMNS for clarity
+	* updated documentation
+	* fixed extension.driver.php
+
+* 0.1, 05 December 2009
+	* initial release. Woo! Yay! Fanfare.

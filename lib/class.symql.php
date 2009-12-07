@@ -11,16 +11,24 @@ Class SymQL {
 	
 	const RETURN_XML = 0;
 	const RETURN_ARRAY = 1;
-	const RETURN_RAW = 2;
-	const RETURN_FIELDS = 3;
+	const RETURN_RAW_COLUMNS = 2;
+	const RETURN_ENTRY_OBJECTS = 3;
 	
 	private $entryManager = null;
 	private $sectionManager = null;
 	private $fieldManager = null;
 	
-	private $reserved_fields = array('*', 'count', 'system:id', 'system:date');
+	private $reserved_fields = array('*', 'system:count', 'system:id', 'system:date');
 	
 	public function __construct($context) {
+		
+		if (!$context) {
+			if(class_exists('Frontend')){
+				$context = Frontend::instance();
+			} else {
+				$context = Administration::instance();
+			}
+		}
 		
 		require_once('class.symqlquery.php');
 		
@@ -173,7 +181,7 @@ Class SymQL {
 				$entry_ids[] = (int)$filter['value'];	
 				continue;
 			}
-			
+
 			// get the cached field object
 			$field = $section_fields[$field_name];
 			if (!$field) throw new Exception(sprintf("%s: field '%s' does not not exist", __CLASS__, $field_name));
@@ -200,7 +208,7 @@ Class SymQL {
 		}
 		
 		// resolve the SELECT type and fetch entries
-		if (reset(array_keys($select_fields)) == 'count') {
+		if (reset(array_keys($select_fields)) == 'system:count') {
 			$select_type = SymQL::SELECT_COUNT;
 			$fetch_result = (int)$this->entryManager->fetchCount(
 				$section->get('id'),
@@ -264,15 +272,15 @@ Class SymQL {
 				$entries = $fetch_result['records'];
 			break;
 			case SymQL::SELECT_COUNT:
-				$entries = null;
+				$count = $fetch_result;
 			break;				
 		}
 		
 		// set up result container depending on return type
 		switch($output) {
 			case SymQL::RETURN_ARRAY:
-			case SymQL::RETURN_RAW:
-			case SymQL::RETURN_FIELDS:
+			case SymQL::RETURN_RAW_COLUMNS:
+			case SymQL::RETURN_ENTRY_OBJECTS:
 				$result = array();					
 				$result['section'] = $section_metadata;
 				if ($pagination) $result['pagination'] = $pagination;
@@ -297,12 +305,12 @@ Class SymQL {
 		}
 		
 		// append returned entries to results container
-		if (SymQL::SELECT_ENTRY_ID || SymQL::SELECT_ENTRIES) {
+		if ($select_type == SymQL::SELECT_ENTRY_ID || $select_type == SymQL::SELECT_ENTRIES) {
 
 			foreach ($entries as $entry) {
 				switch($output) {						
 					
-					case SymQL::RETURN_RAW:
+					case SymQL::RETURN_RAW_COLUMNS:
 						$fields = array();
 						foreach ($entry->getData() as $field_id => $values) {
 							$field = $section_fields[$field_id];
@@ -311,8 +319,8 @@ Class SymQL {
 						$result['entries'][$entry->get('id')] = $fields;
 					break;
 					
-					case SymQL::RETURN_FIELDS:
-						$result['entries'][$entry->get('id')] = $section_fields[$field_id];
+					case SymQL::RETURN_ENTRY_OBJECTS:
+						$result['entries'][$entry->get('id')] = $entry;
 					break;
 					
 					case SymQL::RETURN_XML:
@@ -342,12 +350,12 @@ Class SymQL {
 				}					
 			}
 		}
-		else if (SymQL::SELECT_COUNT) {
-			
+		elseif ($select_type == SymQL::SELECT_COUNT) {
+
 			switch($output) {
 				case SymQL::RETURN_ARRAY:
-				case SymQL::RETURN_RAW:
-				case SymQL::RETURN_FIELDS:
+				case SymQL::RETURN_RAW_COLUMNS:
+				case SymQL::RETURN_ENTRY_OBJECTS:
 					$result['count'] = $count;
 				break;					
 				case SymQL::RETURN_XML:						
