@@ -1,6 +1,10 @@
 <?php
 
+require_once('class.symqlquery.php');
+
 Class SymQL {
+	
+	protected static $_instance;
 	
 	const SELECT_COUNT = 0;
 	const SELECT_ENTRY_ID = 1;
@@ -14,27 +18,29 @@ Class SymQL {
 	const RETURN_RAW_COLUMNS = 2;
 	const RETURN_ENTRY_OBJECTS = 3;
 	
-	private $entryManager = null;
-	private $sectionManager = null;
-	private $fieldManager = null;
+	private static $entryManager = null;
+	private static $sectionManager = null;
+	private static $fieldManager = null;
 	
-	private $reserved_fields = array('*', 'system:count', 'system:id', 'system:date');
+	private static $reserved_fields = array('*', 'system:count', 'system:id', 'system:date');
 	
-	public function __construct($context) {
+	private static function init() {
+		if (!(self::$_instance instanceof SymQL)) {
+			self::$_instance = new self;
+		}
+	}
+	
+	public function __construct() {
 		
-		if (!$context) {
-			if(class_exists('Frontend')){
-				$context = Frontend::instance();
-			} else {
-				$context = Administration::instance();
-			}
+		if(class_exists('Frontend')){
+			$context = Frontend::instance();
+		} else {
+			$context = Administration::instance();
 		}
 		
-		require_once('class.symqlquery.php');
-		
-		$this->entryManager = new EntryManager($context);
-		$this->sectionManager = $this->entryManager->sectionManager;
-		$this->fieldManager = $this->entryManager->fieldManager;
+		self::$entryManager = new EntryManager($context);
+		self::$sectionManager = self::$entryManager->sectionManager;
+		self::$fieldManager = self::$entryManager->fieldManager;
 	}
 	
 	/*
@@ -94,7 +100,7 @@ Class SymQL {
 			$field = trim($field);
 			$remove = true;
 
-			if (in_array($field, $this->reserved_fields)) {
+			if (in_array($field, self::$reserved_fields)) {
 				$fields[$field] = null;
 				$remove = false;
 			}
@@ -116,7 +122,9 @@ Class SymQL {
 		return $fields;
 	}
 	
-	public function run(SymQLQuery $query, $output=SymQL::RETURN_XML) {
+	public static function run(SymQLQuery $query, $output=SymQL::RETURN_XML) {
+		
+		self::init();
 		
 		// stores all config locally so that the same SymQLManager can be used for mutliple queries
 		$section = null;
@@ -126,8 +134,8 @@ Class SymQL {
 		$entry_ids = array();
 		
 		// resolve section
-		if (!is_numeric($query->section)) $section = $this->sectionManager->fetchIDFromHandle($query->section);
-		$section = $this->sectionManager->fetch($section);
+		if (!is_numeric($query->section)) $section = self::$sectionManager->fetchIDFromHandle($query->section);
+		$section = self::$sectionManager->fetch($section);
 		if (!$section instanceof Section) throw new Exception(sprintf("%s: section '%s' does not not exist", __CLASS__, $query->section));
 		
 		// cache list of field objects in this section (id => object)
@@ -135,7 +143,7 @@ Class SymQL {
 		foreach($fields as $field) {
 			$section_fields[] = $field->get('id');
 		}
-		$section_fields = $this->indexFieldsByID($section_fields, $fields, true);
+		$section_fields = self::indexFieldsByID($section_fields, $fields, true);
 		
 		// resolve list of fields from SELECT statement
 		if ($query->fields == '*') {
@@ -146,12 +154,12 @@ Class SymQL {
 		else {
 			$select_fields = $query->fields;
 		}
-		$select_fields = $this->indexFieldsByID($select_fields, $fields);
+		$select_fields = self::indexFieldsByID($select_fields, $fields);
 		
 		// resolve list of fields from WHERE statements (filters)
 		$filters = array();
 		foreach ($query->filters as $filter) {
-			$field = $this->indexFieldsByID($filter['field'], $fields);
+			$field = self::indexFieldsByID($filter['field'], $fields);
 			if ($field) {
 				$filters[reset(array_keys($field))]['value'] = $filter['value'];
 				$filters[reset(array_keys($field))]['type'] = $filter['type'];
@@ -159,16 +167,16 @@ Class SymQL {
 		}
 		
 		// resolve sort field
-		if (in_array($query->sort_field, $this->reserved_fields)) {
+		if (in_array($query->sort_field, self::$reserved_fields)) {
 			$handle_exploded = explode(':', $query->sort_field);
 			if (count($handle_exploded) == 2) {
-				$this->entryManager->setFetchSorting(end($handle_exploded), $query->sort_direction);
+				self::$entryManager->setFetchSorting(end($handle_exploded), $query->sort_direction);
 			}
 		} else {
-			$sort_field = $this->indexFieldsByID($query->sort_field, $fields);
+			$sort_field = self::indexFieldsByID($query->sort_field, $fields);
 			$sort_field = $section_fields[reset(array_keys($sort_field))];
 			if ($sort_field && $sort_field->isSortable()) {
-				$this->entryManager->setFetchSorting($sort_field->get('id'), $query->sort_direction);
+				self::$entryManager->setFetchSorting($sort_field->get('id'), $query->sort_direction);
 			}
 		}			
 		
@@ -210,7 +218,7 @@ Class SymQL {
 		// resolve the SELECT type and fetch entries
 		if (reset(array_keys($select_fields)) == 'system:count') {
 			$select_type = SymQL::SELECT_COUNT;
-			$fetch_result = (int)$this->entryManager->fetchCount(
+			$fetch_result = (int)self::$entryManager->fetchCount(
 				$section->get('id'),
 				$where,
 				$joins
@@ -218,7 +226,7 @@ Class SymQL {
 		}
 		else if (count($entry_ids) > 0) {
 			$select_type = SymQL::SELECT_ENTRY_ID;
-			$fetch_result = $this->entryManager->fetch(
+			$fetch_result = self::$entryManager->fetch(
 				$entry_ids,
 				$section->get('id'),
 				null,
@@ -232,7 +240,7 @@ Class SymQL {
 		}
 		else {
 			$select_type = SymQL::SELECT_ENTRIES;
-			$fetch_result = $this->entryManager->fetchByPage(
+			$fetch_result = self::$entryManager->fetchByPage(
 				$query->page,
 				$section->get('id'),
 				$query->per_page,
@@ -341,7 +349,7 @@ Class SymQL {
 						}
 						
 						if ($output == SymQL::RETURN_ARRAY) {
-							$result['entries'][] = reset($this->xmlElementToArray($xml_entry, true));
+							$result['entries'][] = reset(self::xmlElementToArray($xml_entry, true));
 						} else {
 							$result->appendChild($xml_entry);
 						}
@@ -366,7 +374,7 @@ Class SymQL {
 		}
 		
 		// reset for the next query
-		$this->entryManager->setFetchSorting(null, null);
+		self::$entryManager->setFetchSorting(null, null);
 		
 		return $result;
 		

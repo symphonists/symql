@@ -4,7 +4,7 @@
 
 		public function about(){
 			return array('name' => 'SymQL',
-						 'version' => '0.2',
+						 'version' => '0.3',
 						 'release-date' => '2009-12-07',
 						 'author' => array('name' => 'Nick Dunn',
 										   'website' => 'http://nick-dunn.co.uk'),

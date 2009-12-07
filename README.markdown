@@ -1,5 +1,5 @@
 # SymQL
-Version: 0.2  
+Version: 0.3  
 Author: [Nick Dunn](http://nick-dunn.co.uk)  
 Build Date: 07 December 2009  
 Requirements: Symphony integration branch
@@ -8,14 +8,6 @@ Requirements: Symphony integration branch
 Include the SymQL class:
 
 	require_once(EXTENSIONS . '/symql/lib/class.symql.php');
-
-Create a new SymQL:
-
-	$symql = new SymQL();
-
-SymQL will try to establish its own context (instance of `Symphony` either as `Frontend` or `Administration`) but if you wish you can pass an explicit context:
-
-	$symql = new SymQL(Frontend::instance());
 
 Build a new query:
 
@@ -80,11 +72,11 @@ Which page of entries to return.
 ## Run the query!
 To run the SymQLQuery object, pass it to the SymQL's `run` method:
 
-	$result = $symql->run($query); // returns an XMLElement of matching entries
+	$result = SymQL::run($query); // returns an XMLElement of matching entries
 
 SymQL can return entries in four different flavours depending on how you want them. Pass the output mode as the second argument to the `run` method. For example:
 
-	$result = $symql->run($query, SymQL::RETURN_ENTRY_OBJECTS); // returns an array of Entry objects
+	$result = SymQL::run($query, SymQL::RETURN_ENTRY_OBJECTS); // returns an array of Entry objects
 
 * `RETURN_XML` (default) returns an XMLElement object, almost identical to a Data Source output
 * `RETURN_ARRAY` returns the same structure as RETURN_XML above, but the XMLElement is converted into a PHP array
@@ -92,10 +84,12 @@ SymQL can return entries in four different flavours depending on how you want th
 * `RETURN_ENTRY_OBJECTS` returns an array of Entry objects, useful for further processing
 
 ## Known issues
-* SymQL should really be a static class. Need to think how it maintains $context without something like DatabaseManpultor's "associateParent" ugliness
 * serialising XMLElement into an array doesn't produce a very clean array
 
 ## Changelog
+
+* 0.3, 07 December 2009
+	* SymQL is now a static class
 
 * 0.2, 07 December 2009
 	* changed `count` to `select:count` to avoid naming conflicts
