@@ -83,6 +83,25 @@ SymQL can return entries in four different flavours depending on how you want th
 * `RETURN_RAW_COLUMNS` returns the raw column values from the database for each field
 * `RETURN_ENTRY_OBJECTS` returns an array of Entry objects, useful for further processing
 
+## A simple example
+Try this inside a customised Data Source. The DS should return $result, which by default is returned from SymQL as an XMLElement.
+
+	// include SymQL
+	require_once(EXTENSIONS . '/symql/lib/class.symql.php');
+
+	// create a new SymQLQuery
+	$query = new SymQLQuery();
+	$query
+		->select('title, content, date, publish')
+		->from('articles')
+		->where('published', 'yes')
+		->orderby('system:date', 'desc')
+		->perPage(10)
+		->page(1);
+
+	// run it! by default an XMLElement is returned
+	$result = SymQL::run($query);
+
 ## Known issues
 * serialising XMLElement into an array doesn't produce a very clean array
 
