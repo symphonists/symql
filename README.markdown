@@ -1,7 +1,7 @@
 # SymQL
-Version: 0.3  
+Version: 0.4  
 Author: [Nick Dunn](http://nick-dunn.co.uk)  
-Build Date: 07 December 2009  
+Build Date: 08 December 2009  
 Requirements: Symphony integration branch
 
 ## Usage
@@ -111,6 +111,11 @@ Basic debug information can be ascertained by calling `SymQL::getDebug()` after 
 * serialising XMLElement into an array doesn't produce a very clean array
 
 ## Changelog
+
+* 0.4, 08 December 2009
+	* fixed bug that prevented multiple filters on the same field
+	* tidied private variable naming
+	* added debug logging for query counts and SQL fragments
 
 * 0.3, 07 December 2009
 	* SymQL is now a static class
