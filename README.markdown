@@ -102,6 +102,11 @@ Try this inside a customised Data Source. The DS should return $result, which by
 	// run it! by default an XMLElement is returned
 	$result = SymQL::run($query);
 
+## Debugging
+Basic debug information can be ascertained by calling `SymQL::getDebug()` after running your query. It returns an array of query counts and SQL fragments.
+
+	var_dump(SymQL::getDebug());die;
+
 ## Known issues
 * serialising XMLElement into an array doesn't produce a very clean array
 

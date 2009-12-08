@@ -5,6 +5,9 @@ require_once('class.symqlquery.php');
 Class SymQL {
 	
 	protected static $_instance;
+	private static $_debug = null;
+	private static $_base_querycount = null;
+	private static $_cumulative_querycount = null;
 	
 	const SELECT_COUNT = 0;
 	const SELECT_ENTRY_ID = 1;
@@ -18,11 +21,12 @@ Class SymQL {
 	const RETURN_RAW_COLUMNS = 2;
 	const RETURN_ENTRY_OBJECTS = 3;
 	
-	private static $entryManager = null;
-	private static $sectionManager = null;
-	private static $fieldManager = null;
+	private static $_context = null;
+	private static $_entryManager = null;
+	private static $_sectionManager = null;
+	private static $_fieldManager = null;
 	
-	private static $reserved_fields = array('*', 'system:count', 'system:id', 'system:date');
+	private static $_reserved_fields = array('*', 'system:count', 'system:id', 'system:date');
 	
 	private static function init() {
 		if (!(self::$_instance instanceof SymQL)) {
@@ -33,14 +37,18 @@ Class SymQL {
 	public function __construct() {
 		
 		if(class_exists('Frontend')){
-			$context = Frontend::instance();
+			self::$_context = Frontend::instance();
 		} else {
-			$context = Administration::instance();
+			self::$_context = Administration::instance();
 		}
 		
-		self::$entryManager = new EntryManager($context);
-		self::$sectionManager = self::$entryManager->sectionManager;
-		self::$fieldManager = self::$entryManager->fieldManager;
+		self::$_entryManager = new EntryManager(self::$_context);
+		self::$_sectionManager = self::$_entryManager->sectionManager;
+		self::$_fieldManager = self::$_entryManager->fieldManager;
+	}
+	
+	public function debug($enabled=true) {
+		self::$_debug = $enabled;
 	}
 	
 	/*
@@ -100,7 +108,7 @@ Class SymQL {
 			$field = trim($field);
 			$remove = true;
 
-			if (in_array($field, self::$reserved_fields)) {
+			if (in_array($field, self::$_reserved_fields)) {
 				$fields[$field] = null;
 				$remove = false;
 			}
@@ -122,9 +130,26 @@ Class SymQL {
 		return $fields;
 	}
 	
+	private static function getQueryCount() {
+		if (is_null(self::$_cumulative_querycount)) {
+			self::$_base_querycount = self::$_context->Database->queryCount();
+			self::$_cumulative_querycount = self::$_context->Database->queryCount();
+			return 0;
+		}
+		$count = self::$_context->Database->queryCount() - self::$_cumulative_querycount;
+		self::$_cumulative_querycount = self::$_context->Database->queryCount();
+		return $count;
+	}
+	
+	public static function getDebug() {
+		return self::$_debug;
+	}
+	
 	public static function run(SymQLQuery $query, $output=SymQL::RETURN_XML) {
 		
 		self::init();
+		
+		self::getQueryCount();
 		
 		// stores all config locally so that the same SymQLManager can be used for mutliple queries
 		$section = null;
@@ -134,9 +159,11 @@ Class SymQL {
 		$entry_ids = array();
 		
 		// resolve section
-		if (!is_numeric($query->section)) $section = self::$sectionManager->fetchIDFromHandle($query->section);
-		$section = self::$sectionManager->fetch($section);
+		if (!is_numeric($query->section)) $section = self::$_sectionManager->fetchIDFromHandle($query->section);
+		$section = self::$_sectionManager->fetch($section);
 		if (!$section instanceof Section) throw new Exception(sprintf("%s: section '%s' does not not exist", __CLASS__, $query->section));
+		
+		self::$_debug['queries']['Resolve section'] = self::getQueryCount();
 		
 		// cache list of field objects in this section (id => object)
 		$fields = $section->fetchFields();
@@ -144,6 +171,8 @@ Class SymQL {
 			$section_fields[] = $field->get('id');
 		}
 		$section_fields = self::indexFieldsByID($section_fields, $fields, true);
+		
+		self::$_debug['queries']['Resolve section fields'] = self::getQueryCount();
 		
 		// resolve list of fields from SELECT statement
 		if ($query->fields == '*') {
@@ -167,18 +196,20 @@ Class SymQL {
 		}
 		
 		// resolve sort field
-		if (in_array($query->sort_field, self::$reserved_fields)) {
+		if (in_array($query->sort_field, self::$_reserved_fields)) {
 			$handle_exploded = explode(':', $query->sort_field);
 			if (count($handle_exploded) == 2) {
-				self::$entryManager->setFetchSorting(end($handle_exploded), $query->sort_direction);
+				self::$_entryManager->setFetchSorting(end($handle_exploded), $query->sort_direction);
 			}
 		} else {
 			$sort_field = self::indexFieldsByID($query->sort_field, $fields);
 			$sort_field = $section_fields[reset(array_keys($sort_field))];
 			if ($sort_field && $sort_field->isSortable()) {
-				self::$entryManager->setFetchSorting($sort_field->get('id'), $query->sort_direction);
+				self::$_entryManager->setFetchSorting($sort_field->get('id'), $query->sort_direction);
 			}
-		}			
+		}
+		
+		self::$_debug['queries']['Resolve sorting'] = self::getQueryCount();
 		
 		$where = null;
 		$joins = null;
@@ -220,7 +251,7 @@ Class SymQL {
 		// resolve the SELECT type and fetch entries
 		if (reset(array_keys($select_fields)) == 'system:count') {
 			$select_type = SymQL::SELECT_COUNT;
-			$fetch_result = (int)self::$entryManager->fetchCount(
+			$fetch_result = (int)self::$_entryManager->fetchCount(
 				$section->get('id'),
 				$where,
 				$joins
@@ -228,7 +259,7 @@ Class SymQL {
 		}
 		else if (count($entry_ids) > 0) {
 			$select_type = SymQL::SELECT_ENTRY_ID;
-			$fetch_result = self::$entryManager->fetch(
+			$fetch_result = self::$_entryManager->fetch(
 				$entry_ids,
 				$section->get('id'),
 				null,
@@ -242,7 +273,7 @@ Class SymQL {
 		}
 		else {
 			$select_type = SymQL::SELECT_ENTRIES;
-			$fetch_result = self::$entryManager->fetchByPage(
+			$fetch_result = self::$_entryManager->fetchByPage(
 				$query->page,
 				$section->get('id'),
 				$query->per_page,
@@ -254,6 +285,11 @@ Class SymQL {
 				array_values($select_fields)
 			);
 		}
+		
+		self::$_debug['sql']['joins'] = $joins;
+		self::$_debug['sql']['where'] = $where;
+		
+		self::$_debug['queries']['Fetch entries'] = self::getQueryCount();
 		
 		// section metadata
 		$section_metadata = array(
@@ -376,7 +412,9 @@ Class SymQL {
 		}
 		
 		// reset for the next query
-		self::$entryManager->setFetchSorting(null, null);
+		self::$_entryManager->setFetchSorting(null, null);
+		
+		self::$_debug['queries']['Total'] = self::$_context->Database->queryCount() - self::$_base_querycount;
 		
 		return $result;
 		
