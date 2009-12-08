@@ -158,11 +158,11 @@ Class SymQL {
 		
 		// resolve list of fields from WHERE statements (filters)
 		$filters = array();
-		foreach ($query->filters as $filter) {
+		foreach ($query->filters as $i => $filter) {
 			$field = self::indexFieldsByID($filter['field'], $fields);
 			if ($field) {
-				$filters[reset(array_keys($field))]['value'] = $filter['value'];
-				$filters[reset(array_keys($field))]['type'] = $filter['type'];
+				$filters[$i][reset(array_keys($field))]['value'] = $filter['value'];
+				$filters[$i][reset(array_keys($field))]['type'] = $filter['type'];
 			}
 		}
 		
@@ -183,7 +183,9 @@ Class SymQL {
 		$where = null;
 		$joins = null;
 		
-		foreach ($filters as $field_name => $filter) {
+		foreach ($filters as $filter) {
+			$field_id = reset(array_keys($filter));
+			$filter = reset($filter);
 			
 			if ($field_name == 'system:id') {
 				$entry_ids[] = (int)$filter['value'];	
@@ -191,9 +193,9 @@ Class SymQL {
 			}
 
 			// get the cached field object
-			$field = $section_fields[$field_name];
-			if (!$field) throw new Exception(sprintf("%s: field '%s' does not not exist", __CLASS__, $field_name));
-			if (!$field->canFilter() || !method_exists($field, 'buildDSRetrivalSQL')) throw new Exception(sprintf("%s: field '%s' can not be used as a filter", __CLASS__, $field_name));
+			$field = $section_fields[$field_id];
+			if (!$field) throw new Exception(sprintf("%s: field '%s' does not not exist", __CLASS__, $field_id));
+			if (!$field->canFilter() || !method_exists($field, 'buildDSRetrivalSQL')) throw new Exception(sprintf("%s: field '%s' can not be used as a filter", __CLASS__, $field_id));
 			
 			// local
 			$_where = null;
