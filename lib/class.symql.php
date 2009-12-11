@@ -1,6 +1,7 @@
 <?php
 
 require_once('class.symqlquery.php');
+require_once('class.xmltoarray.php');
 
 Class SymQL {
 	
@@ -25,6 +26,9 @@ Class SymQL {
 	private static $_entryManager = null;
 	private static $_sectionManager = null;
 	private static $_fieldManager = null;
+	
+	private static $_resolved_sections = array();
+	private static $_resolved_fields = array();
 	
 	private static $_reserved_fields = array('*', 'system:count', 'system:id', 'system:date');
 	
@@ -51,47 +55,21 @@ Class SymQL {
 		self::$_debug = $enabled;
 	}
 	
-	/*
-		Given an XMLElement, iterates and converts children into an array
-	*/
-	private function xmlElementToArray($node, $is_field_data=false){
-
-		$result = array();
-
-		if(count($node->getAttributes()) > 0){
-			foreach($node->getAttributes() as $attribute => $value ){
-				if(strlen($value) != 0){
-					$result[$node->getName()]['_' . $attribute] = $value;
-				}
-			}				
+	private function getResolvedSection($section) {
+		foreach(self::$_resolved_sections as $s) {
+			if ((is_numeric($section) && (int)$section == $s->get('id')) || $section == $s->get('handle')) {
+				return $s;
+			}
 		}
-
-		$value = $node->getValue();
-		if (!is_null($value)) $result[$node->getName()]['value'] = $node->getValue();
-
-		$numberOfchildren = $node->getNumberOfChildren();
-
-		if($numberOfchildren > 0 || strlen($node->getValue()) != 0){
-
-			if($numberOfchildren > 0 ) {
-
-				foreach($node->getChildren() as $child) {
-
-					$next_child_is_field_data = ($child->getName() == 'entry');
-
-					if ($is_field_data == true) {
-						if(($child instanceof XMLElement)) $result[$node->getName()]['fields'][] = self::xmlElementToArray($child, $next_child_is_field_data);
-					} else {
-						if(($child instanceof XMLElement)) $result[$node->getName()][] = self::xmlElementToArray($child, $next_child_is_field_data);
-					}
-				}
-
-			}			
-		}
-
-		return $result;
 	}
 	
+	private function getResolvedFields($section_id) {
+		foreach(self::$_resolved_sections as $s) {
+			if ((int)$section_id == $s->get('id')) {
+				return self::$_resolved_fields[$section_id];
+			}
+		}
+	}
 	
 	/*
 		Given an array of fields ($fields_list), which can be mixed handles and IDs
@@ -159,21 +137,29 @@ Class SymQL {
 		$entry_ids = array();
 		
 		// resolve section
-		if (!is_numeric($query->section)) $section = self::$_sectionManager->fetchIDFromHandle($query->section);
-		$section = self::$_sectionManager->fetch($section);
-		if (!$section instanceof Section) throw new Exception(sprintf("%s: section '%s' does not not exist", __CLASS__, $query->section));
+		$resolved_section = self::getResolvedSection($query->section);
 		
-		self::$_debug['queries']['Resolve section'] = self::getQueryCount();
+		if (is_null($resolved_section)) {
+			if (!is_numeric($query->section)) $section = self::$_sectionManager->fetchIDFromHandle($query->section);
+			$section = self::$_sectionManager->fetch($section);
+			if (!$section instanceof Section) throw new Exception(sprintf("%s: section '%s' does not not exist", __CLASS__, $query->section));
+			$fields = $section->fetchFields();
+			self::$_resolved_sections[] = $section;
+			self::$_resolved_fields[$section->get('id')] = $fields;
+		}
+		else {
+			$section = $resolved_section;
+			$fields = self::getResolvedFields($section->get('id'));
+		}
+		
+		self::$_debug['queries']['Resolve section and fields'] = self::getQueryCount();
 		
 		// cache list of field objects in this section (id => object)
-		$fields = $section->fetchFields();
 		foreach($fields as $field) {
 			$section_fields[] = $field->get('id');
 		}
 		$section_fields = self::indexFieldsByID($section_fields, $fields, true);
-		
-		self::$_debug['queries']['Resolve section fields'] = self::getQueryCount();
-		
+				
 		// resolve list of fields from SELECT statement
 		if ($query->fields == '*') {
 			foreach ($fields as $field) {
@@ -208,8 +194,6 @@ Class SymQL {
 				self::$_entryManager->setFetchSorting($sort_field->get('id'), $query->sort_direction);
 			}
 		}
-		
-		self::$_debug['queries']['Resolve sorting'] = self::getQueryCount();
 		
 		$where = null;
 		$joins = null;
@@ -387,7 +371,7 @@ Class SymQL {
 						}
 						
 						if ($output == SymQL::RETURN_ARRAY) {
-							$result['entries'][] = reset(self::xmlElementToArray($xml_entry, true));
+							$result['entries'][] = XMLToArray::convert($xml_entry->generate());
 						} else {
 							$result->appendChild($xml_entry);
 						}
@@ -411,10 +395,12 @@ Class SymQL {
 			}
 		}
 		
+		self::$_debug['queries']['Total'] = self::$_context->Database->queryCount() - self::$_base_querycount;
+		
 		// reset for the next query
 		self::$_entryManager->setFetchSorting(null, null);
-		
-		self::$_debug['queries']['Total'] = self::$_context->Database->queryCount() - self::$_base_querycount;
+		self::$_base_querycount = null;
+		self::$_cumulative_querycount = null;
 		
 		return $result;
 		
