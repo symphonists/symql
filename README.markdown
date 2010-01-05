@@ -1,8 +1,8 @@
 # SymQL
 Version: 0.6   
 Author: [Nick Dunn](http://nick-dunn.co.uk)  
-Build Date: 11 December 2009  
-Requirements: Symphony integration branch
+Build Date: 2010-01-05  
+Requirements: Symphony 2.0.7
 
 ## Usage
 Include the SymQL class:
