@@ -11,6 +11,9 @@ Essentially SymQL is a wrapper for the `EntryManager` class. It shares many simi
 
 The primary aim of this extension is to provide human-readable object-oriented access to Symphony entries to make building custom data sources a whole lot easier.
 
+
+* * *
+
 ## Usage
 Include the SymQL class:
 
@@ -118,10 +121,12 @@ Basic debug information can be ascertained by calling `SymQL::getDebug()` after 
 
 	var_dump(SymQL::getDebug());die;
 
-## Known issues
-* serialising XMLElement into an array doesn't produce a very clean array
+* * *
 
-## Changelog
+### Known issues
+* none as of 0.6
+
+### Changelog
 
 * 0.6, 05 January 2010
 	* renamed the AND/OR enumerators for clarity
