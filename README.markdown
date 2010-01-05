@@ -11,9 +11,6 @@ Essentially SymQL is a wrapper for the `EntryManager` class. It shares many simi
 
 The primary aim of this extension is to provide human-readable object-oriented access to Symphony entries to make building custom data sources a whole lot easier.
 
-
-* * *
-
 ## Usage
 Include the SymQL class:
 
@@ -120,8 +117,6 @@ Try this inside a customised Data Source. The DS should return $result, which by
 Basic debug information can be ascertained by calling `SymQL::getDebug()` after running your query. It returns an array of query counts and SQL fragments.
 
 	var_dump(SymQL::getDebug());die;
-
-* * *
 
 ### Known issues
 * none as of 0.6
