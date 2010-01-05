@@ -2,6 +2,7 @@
 
 Class SymQLQuery {
 	
+	public $root_element = null;
 	public $section = null;
 	public $fields = null;
 	public $filters = null;
@@ -10,7 +11,8 @@ Class SymQLQuery {
 	public $sort_field = 'system:id';
 	public $sort_direction = 'desc';
 	
-	public function __construct() {
+	public function __construct($root_element=null) {
+		$this->root_element = $root_element;
 		return $this;
 	}
 
@@ -29,7 +31,7 @@ Class SymQLQuery {
 		return $this;
 	}
 
-	public function where($field, $condition, $type=SymQL::QUERY_AND) {
+	public function where($field, $condition, $type=SymQL::DS_FILTER_AND) {
 		if (!is_array($this->filters)) $this->filters = array();
 		$this->filters[] = array(
 			'field' => $field,

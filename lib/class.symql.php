@@ -1,5 +1,7 @@
 <?php
 
+require_once(TOOLKIT . '/class.entrymanager.php');
+
 require_once('class.symqlquery.php');
 require_once('class.xmltoarray.php');
 
@@ -14,13 +16,13 @@ Class SymQL {
 	const SELECT_ENTRY_ID = 1;
 	const SELECT_ENTRIES = 2;
 	
-	const QUERY_AND = 'AND';
-	const QUERY_OR = 'OR';
-	
 	const RETURN_XML = 0;
 	const RETURN_ARRAY = 1;
 	const RETURN_RAW_COLUMNS = 2;
 	const RETURN_ENTRY_OBJECTS = 3;
+	
+	const DS_FILTER_AND = 1;
+	const DS_FILTER_OR = 2;
 	
 	private static $_context = null;
 	private static $_entryManager = null;
@@ -81,7 +83,8 @@ Class SymQL {
 	private function indexFieldsByID($fields_list, $section_fields, $return_object=false) {
 		if (!is_array($fields_list) && !is_null($fields_list)) $fields_list = array($fields_list);
 		
-		$fields = array();			
+		$fields = array();
+		if (!is_array($fields_list)) $fields_list = array($fields_list);	
 		foreach ($fields_list as $field) {
 			$field = trim($field);
 			$remove = true;
@@ -140,6 +143,7 @@ Class SymQL {
 		$resolved_section = self::getResolvedSection($query->section);
 		
 		if (is_null($resolved_section)) {
+			$section = $query->section;
 			if (!is_numeric($query->section)) $section = self::$_sectionManager->fetchIDFromHandle($query->section);
 			$section = self::$_sectionManager->fetch($section);
 			if (!$section instanceof Section) throw new Exception(sprintf("%s: section '%s' does not not exist", __CLASS__, $query->section));
@@ -159,7 +163,7 @@ Class SymQL {
 			$section_fields[] = $field->get('id');
 		}
 		$section_fields = self::indexFieldsByID($section_fields, $fields, true);
-				
+		
 		// resolve list of fields from SELECT statement
 		if ($query->fields == '*') {
 			foreach ($fields as $field) {
@@ -173,11 +177,14 @@ Class SymQL {
 		
 		// resolve list of fields from WHERE statements (filters)
 		$filters = array();
-		foreach ($query->filters as $i => $filter) {
-			$field = self::indexFieldsByID($filter['field'], $fields);
-			if ($field) {
-				$filters[$i][reset(array_keys($field))]['value'] = $filter['value'];
-				$filters[$i][reset(array_keys($field))]['type'] = $filter['type'];
+		
+		if (is_array($query->filters)) {
+			foreach ($query->filters as $i => $filter) {
+				$field = self::indexFieldsByID($filter['field'], $fields);
+				if ($field) {
+					$filters[$i][reset(array_keys($field))]['value'] = $filter['value'];
+					$filters[$i][reset(array_keys($field))]['type'] = $filter['type'];
+				}
 			}
 		}
 		
@@ -216,13 +223,16 @@ Class SymQL {
 			$_where = null;
 			$_joins = null;
 			
+			$filter_type = (false === strpos($filter['value'], '+') ? self::DS_FILTER_OR : self::DS_FILTER_AND);
+			$value = preg_split('/'.($filter_type == self::DS_FILTER_AND ? '\+' : ',').'\s*/', $filter['value'], -1, PREG_SPLIT_NO_EMPTY);
+			
 			// Get the WHERE and JOIN from the field
 			$where_before = $_where;
-			$field->buildDSRetrivalSQL(array($filter['value']), $_joins, $_where, true);
+			$field->buildDSRetrivalSQL(array($filter['value']), $_joins, $_where, ($filter_type == self::DS_FILTER_AND ? true : false));
 			
 			// HACK: if this is an OR statement, strip the first AND from the returned SQL
 			// and replace with OR
-			if ($filter['type'] == SymQL::QUERY_OR) {
+			if ($filter['type'] == SymQL::DS_FILTER_OR) {
 				$_where_after = substr($_where, strlen($_where_before), strlen($where));
 				$_where_after = preg_replace('/^AND/', 'OR', trim($_where_after));
 				$_where = $_where_before . $_where_after;
@@ -317,7 +327,7 @@ Class SymQL {
 			break;
 			
 			case SymQL::RETURN_XML:
-				$result = new XMLElement('query');
+				$result = new XMLElement(($query->root_element) ? $query->root_element : 'symql');
 				$result->appendChild(new XMLElement('section', $section_metadata['name'],
 					array(
 						'id' => $section_metadata['id'],

@@ -1,5 +1,5 @@
 # SymQL
-Version: 0.5  
+Version: 0.6   
 Author: [Nick Dunn](http://nick-dunn.co.uk)  
 Build Date: 11 December 2009  
 Requirements: Symphony integration branch
@@ -40,11 +40,11 @@ Build a series of select criteria. Use DS-filtering syntax. Accepts a field (han
 
 As with a Data Source, filters combine at the SQL level with the AND keyword. Therefore using the two filters above would select entries where published=yes AND title is like CSS. If you want the filters to concatenate using the OR keyword, pass your preference as the optional third argument:
 
-	$query->where('title', 'regexp:Nick', SymQL::QUERY_OR);
-	$query->where('title', 'regexp:Dunn', SymQL::QUERY_OR);
-	$query->where('published', 'yes', SymQL::QUERY_AND);
+	$query->where('title', 'regexp:Allen');
+	$query->where('title', 'regexp:Alistair', SymQL::DS_FILTER_OR);
+	$query->where('published', 'yes', SymQL::DS_FILTER_AND);
 
-The above will find published entries where the title matches either Nick or Dunn. Note that the default is `SymQL::QUERY_AND` so this doesn't need to be set explicitly on the third `where` above.
+The above will find published entries where the title matches either Nick or Dunn. Note that the default is `SymQL::DS_FILTER_AND` so this doesn't need to be set explicitly on the third `where` above.
 
 System parameters can also be filtered on, as with a normal Data Source:
 
@@ -83,14 +83,18 @@ SymQL can return entries in four different flavours depending on how you want th
 * `RETURN_RAW_COLUMNS` returns the raw column values from the database for each field
 * `RETURN_ENTRY_OBJECTS` returns an array of Entry objects, useful for further processing
 
+When using the default `RETURN_XML` type, the root element is named `symql` by default. To change this, pass the root element name when constructing the query:
+
+	$query = new SymQLQuery('element-name-here');
+
 ## A simple example
 Try this inside a customised Data Source. The DS should return $result, which by default is returned from SymQL as an XMLElement.
 
 	// include SymQL
 	require_once(EXTENSIONS . '/symql/lib/class.symql.php');
-
+	
 	// create a new SymQLQuery
-	$query = new SymQLQuery();
+	$query = new SymQLQuery('published-articles');
 	$query
 		->select('title, content, date, publish')
 		->from('articles')
@@ -98,7 +102,7 @@ Try this inside a customised Data Source. The DS should return $result, which by
 		->orderby('system:date', 'desc')
 		->perPage(10)
 		->page(1);
-
+		
 	// run it! by default an XMLElement is returned
 	$result = SymQL::run($query);
 
@@ -111,6 +115,10 @@ Basic debug information can be ascertained by calling `SymQL::getDebug()` after 
 * serialising XMLElement into an array doesn't produce a very clean array
 
 ## Changelog
+
+* 0.6, 05 January 2010
+	* renamed the AND/OR enumerators for clarity
+	* added ability to change the root element when XML is returned
 
 * 0.5, 11 December 2009
 	* fixed driver PHP syntax error (thanks brendo)
