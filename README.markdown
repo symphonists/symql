@@ -4,6 +4,13 @@ Author: [Nick Dunn](http://nick-dunn.co.uk)
 Build Date: 2010-01-05  
 Requirements: Symphony 2.0.7
 
+## Rationale
+Querying entries within your own PHP applications can be a hit-and-miss affair. Building the JOINs of field tables is time consuming, but a necessary evil even if you want to use the `EntryManager` class (which requires you to pass JOINs and WHERE strings of SQL to it). SymQL continues what [DatabaseManipulator](http://github.com/yourheropaul/databasemanipulator/) started, and is intended as a full replacement.
+
+Essentially SymQL is a wrapper for the `EntryManager` class. It shares many similarities with Data Sources and it uses the same "filter" syntax to compile its WHERE queries. It adds additional functionality beyond Data Sources in that it allows you to perform OR queries between field (e.g. `WHERE (name='Alistair' OR name='Allen') AND published='yes'`).
+
+The primary aim of this extension is to provide human-readable object-oriented access to Symphony entries to make building custom data sources a whole lot easier.
+
 ## Usage
 Include the SymQL class:
 
