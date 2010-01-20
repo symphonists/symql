@@ -209,7 +209,7 @@ Class SymQL {
 			$field_id = reset(array_keys($filter));
 			$filter = reset($filter);
 			
-			if ($field_name == 'system:id') {
+			if ($field_id == 'system:id') {
 				$entry_ids[] = (int)$filter['value'];	
 				continue;
 			}
