@@ -226,9 +226,11 @@ Class SymQL {
 			$filter_type = (false === strpos($filter['value'], '+') ? self::DS_FILTER_OR : self::DS_FILTER_AND);
 			$value = preg_split('/'.($filter_type == self::DS_FILTER_AND ? '\+' : ',').'\s*/', $filter['value'], -1, PREG_SPLIT_NO_EMPTY);
 			
+			if (!is_array($value)) $value = array($value);
+			
 			// Get the WHERE and JOIN from the field
 			$where_before = $_where;
-			$field->buildDSRetrivalSQL(array($filter['value']), $_joins, $_where, ($filter_type == self::DS_FILTER_AND ? true : false));
+			$field->buildDSRetrivalSQL($value, $_joins, $_where, ($filter_type == self::DS_FILTER_AND ? true : false));
 			
 			// HACK: if this is an OR statement, strip the first AND from the returned SQL
 			// and replace with OR
@@ -256,7 +258,7 @@ Class SymQL {
 			$fetch_result = self::$_entryManager->fetch(
 				$entry_ids,
 				$section->get('id'),
-				null,
+				$query->per_page,
 				null,
 				null,
 				false,
