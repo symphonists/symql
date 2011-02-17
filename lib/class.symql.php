@@ -8,9 +8,9 @@ require_once('class.xmltoarray.php');
 Class SymQL {
 	
 	protected static $_instance;
-	private static $_debug = null;
-	private static $_base_querycount = null;
-	private static $_cumulative_querycount = null;
+	private static $_debug = NULL;
+	private static $_base_querycount = NULL;
+	private static $_cumulative_querycount = NULL;
 	
 	const SELECT_COUNT = 0;
 	const SELECT_ENTRY_ID = 1;
@@ -24,10 +24,9 @@ Class SymQL {
 	const DS_FILTER_AND = 1;
 	const DS_FILTER_OR = 2;
 	
-	private static $_context = null;
-	private static $_entryManager = null;
-	private static $_sectionManager = null;
-	private static $_fieldManager = null;
+	private static $_entryManager = NULL;
+	private static $_sectionManager = NULL;
+	private static $_fieldManager = NULL;
 	
 	private static $_resolved_sections = array();
 	private static $_resolved_fields = array();
@@ -41,19 +40,12 @@ Class SymQL {
 	}
 	
 	public function __construct() {
-		
-		if(class_exists('Frontend')){
-			self::$_context = Frontend::instance();
-		} else {
-			self::$_context = Administration::instance();
-		}
-		
-		self::$_entryManager = new EntryManager(self::$_context);
+		self::$_entryManager = new EntryManager(Symphony::Engine());
 		self::$_sectionManager = self::$_entryManager->sectionManager;
 		self::$_fieldManager = self::$_entryManager->fieldManager;
 	}
 	
-	public function debug($enabled=true) {
+	public function debug($enabled=TRUE) {
 		self::$_debug = $enabled;
 	}
 	
@@ -80,18 +72,18 @@ Class SymQL {
 		Throws an exception for fields that do not exist
 		Returns an array of fields indexed by their ID
 	*/
-	private function indexFieldsByID($fields_list, $section_fields, $return_object=false) {
+	private function indexFieldsByID($fields_list, $section_fields, $return_object=FALSE) {
 		if (!is_array($fields_list) && !is_null($fields_list)) $fields_list = array($fields_list);
 		
 		$fields = array();
 		if (!is_array($fields_list)) $fields_list = array($fields_list);	
 		foreach ($fields_list as $field) {
 			$field = trim($field);
-			$remove = true;
+			$remove = TRUE;
 
 			if (in_array($field, self::$_reserved_fields)) {
-				$fields[$field] = null;
-				$remove = false;
+				$fields[$field] = NULL;
+				$remove = FALSE;
 			}
 			
 			$field_name = $field;
@@ -100,7 +92,7 @@ Class SymQL {
 			foreach ($section_fields as $section_field) {
 				if ($section_field->get('element_name') == $field_name || $section_field->get('id') == (int)$field_name) {
 					$fields[$section_field->get('id')] = (($return_object) ? $section_field : ((is_numeric($field_name) ? $field_name : $field)));
-					$remove = false;
+					$remove = FALSE;
 				}
 			}
 			
@@ -113,12 +105,12 @@ Class SymQL {
 	
 	private static function getQueryCount() {
 		if (is_null(self::$_cumulative_querycount)) {
-			self::$_base_querycount = self::$_context->Database->queryCount();
-			self::$_cumulative_querycount = self::$_context->Database->queryCount();
+			self::$_base_querycount = Symphony::Engine()->Database()->queryCount();
+			self::$_cumulative_querycount = Symphony::Engine()->Database()->queryCount();
 			return 0;
 		}
-		$count = self::$_context->Database->queryCount() - self::$_cumulative_querycount;
-		self::$_cumulative_querycount = self::$_context->Database->queryCount();
+		$count = Symphony::Engine()->Database()->queryCount() - self::$_cumulative_querycount;
+		self::$_cumulative_querycount = Symphony::Engine()->Database()->queryCount();
 		return $count;
 	}
 	
@@ -132,11 +124,11 @@ Class SymQL {
 		
 		self::getQueryCount();
 		
-		// stores all config locally so that the same SymQLManager can be used for mutliple queries
-		$section = null;
+		// stores all config locally so that the same SymQL instance can be used for mutliple queries
+		$section = NULL;
 		$section_fields = array();
-		$where = null;
-		$joins = null;			
+		$where = NULL;
+		$joins = NULL;			
 		$entry_ids = array();
 		
 		// resolve section
@@ -162,7 +154,7 @@ Class SymQL {
 		foreach($fields as $field) {
 			$section_fields[] = $field->get('id');
 		}
-		$section_fields = self::indexFieldsByID($section_fields, $fields, true);
+		$section_fields = self::indexFieldsByID($section_fields, $fields, TRUE);
 		
 		// resolve list of fields from SELECT statement
 		if ($query->fields == '*') {
@@ -202,8 +194,8 @@ Class SymQL {
 			}
 		}
 		
-		$where = null;
-		$joins = null;
+		$where = NULL;
+		$joins = NULL;
 		
 		foreach ($filters as $filter) {
 			$field_id = reset(array_keys($filter));
@@ -220,20 +212,19 @@ Class SymQL {
 			if (!$field->canFilter() || !method_exists($field, 'buildDSRetrivalSQL')) throw new Exception(sprintf("%s: field '%s' can not be used as a filter", __CLASS__, $field_id));
 			
 			// local
-			$_where = null;
-			$_joins = null;
+			$_where = NULL;
+			$_joins = NULL;
 			
-			$filter_type = (false === strpos($filter['value'], '+') ? self::DS_FILTER_OR : self::DS_FILTER_AND);
+			$filter_type = (FALSE === strpos($filter['value'], '+') ? self::DS_FILTER_OR : self::DS_FILTER_AND);
 			$value = preg_split('/'.($filter_type == self::DS_FILTER_AND ? '\+' : ',').'\s*/', $filter['value'], -1, PREG_SPLIT_NO_EMPTY);
-			
-			if (!is_array($value)) $value = array($value);
+			$value = array_map('trim', $value);
 			
 			// Get the WHERE and JOIN from the field
 			$where_before = $_where;
-			$field->buildDSRetrivalSQL($value, $_joins, $_where, ($filter_type == self::DS_FILTER_AND ? true : false));
+			$field->buildDSRetrivalSQL(array($filter['value']), $_joins, $_where, ($filter_type == self::DS_FILTER_AND ? TRUE : FALSE));
 			
 			// HACK: if this is an OR statement, strip the first AND from the returned SQL
-			// and replace with OR
+			// and replace with OR. This is quite brittle, but the only way I could think of
 			if ($filter['type'] == SymQL::DS_FILTER_OR) {
 				$_where_after = substr($_where, strlen($_where_before), strlen($where));
 				$_where_after = preg_replace('/^AND/', 'OR', trim($_where_after));
@@ -253,32 +244,36 @@ Class SymQL {
 				$joins
 			);
 		}
+
 		else if (count($entry_ids) > 0) {
 			$select_type = SymQL::SELECT_ENTRY_ID;
 			$fetch_result = self::$_entryManager->fetch(
-				$entry_ids,
-				$section->get('id'),
-				$query->per_page,
-				null,
-				null,
-				false,
-				false,
-				true,
-				array_values($select_fields)
+				$entry_ids, // entry_id
+				$section->get('id'), // section_id
+				NULL, // limit
+				NULL, // start
+				NULL, // where
+				NULL, // joins
+				FALSE, // group
+				TRUE, // buildentries
+				array_values($select_fields) // element_names
 			);
 		}
+		
+		
+		// $page = 1, $section_id, $entriesPerPage, $where = null, $joins = null, $group = false, $records_only = false, $buildentries = true, Array $element_names = null
 		else {
 			$select_type = SymQL::SELECT_ENTRIES;
 			$fetch_result = self::$_entryManager->fetchByPage(
-				$query->page,
-				$section->get('id'),
-				$query->per_page,
-				$where,
-				$joins,
-				false,
-				false,
-				true,
-				array_values($select_fields)
+				$query->page, // page
+				$section->get('id'), // section_id
+				$query->per_page, // entriesPerPage
+				$where, // where
+				$joins, // joins
+				FALSE, // group
+				FALSE, // records_ony
+				TRUE, // build_entries
+				array_values($select_fields) // element_names
 			);
 		}
 		
@@ -407,12 +402,12 @@ Class SymQL {
 			}
 		}
 		
-		self::$_debug['queries']['Total'] = self::$_context->Database->queryCount() - self::$_base_querycount;
+		self::$_debug['queries']['Total'] = Symphony::Engine()->Database()->queryCount() - self::$_base_querycount;
 		
 		// reset for the next query
-		self::$_entryManager->setFetchSorting(null, null);
-		self::$_base_querycount = null;
-		self::$_cumulative_querycount = null;
+		self::$_entryManager->setFetchSorting(NULL, NULL);
+		self::$_base_querycount = NULL;
+		self::$_cumulative_querycount = NULL;
 		
 		return $result;
 		

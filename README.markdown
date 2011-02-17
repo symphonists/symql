@@ -1,18 +1,27 @@
 # SymQL
-Version: 0.6   
-Author: [Nick Dunn](http://nick-dunn.co.uk)  
-Build Date: 2010-01-05  
-Requirements: Symphony 2.0.7
+
+* Version: 0.6.1
+* Author: [Nick Dunn](http://nick-dunn.co.uk)
+* Build Date: 2011-02-16
+* Requirements: Symphony 2.2
 
 ## Rationale
+
 Querying entries within your own PHP applications can be a hit-and-miss affair. Building the JOINs of field tables is time consuming, but a necessary evil even if you want to use the `EntryManager` class (which requires you to pass JOINs and WHERE strings of SQL to it). SymQL continues what [DatabaseManipulator](http://github.com/yourheropaul/databasemanipulator/) started, and is intended as a full replacement.
 
-Essentially SymQL is a wrapper for the `EntryManager` class. It shares many similarities with Data Sources and it uses the same "filter" syntax to compile its WHERE queries. It adds additional functionality beyond Data Sources in that it allows you to perform OR queries between field (e.g. `WHERE (name='Alistair' OR name='Allen') AND published='yes'`).
+Essentially SymQL is a wrapper for the `EntryManager` class. It shares many similarities with Symphony data sources, and it shares the "filter" syntax to compile its WHERE queries. It does however add functionality beyond normal data sources in that it allows you to perform OR queries between fields, for example:
 
-The primary aim of this extension is to provide human-readable object-oriented access to Symphony entries to make building custom data sources a whole lot easier.
+	WHERE (name='Alistair' OR name='Allen') AND published='yes'
+
+The primary aim of this extension is to provide human-readable, object-oriented access to Symphony entries, in order to make custom data sources a whole lot easier.
+
+## Performance
+
+SymQL is just a wrapper around an ugly class. It has no performance gains over standard Symphony data sources, but similarly it does not incur extra queries either. If you want the best performance then you should be writing SQL statements to perform the JOINs yourself. Append `?profile=database-queries` to your page to view Symphony's database queries.
 
 ## Usage
-Include the SymQL class:
+
+SymQL is designed to be as _readable_. Methods are chainable so the query syntax looks as close to SQL as possible. Start by including the SymQL class:
 
 	require_once(EXTENSIONS . '/symql/lib/class.symql.php');
 
@@ -29,9 +38,9 @@ Specify the fields to return for each entry. Accepts a comma-delimited string of
 
 	$query->select('name, body, published'); // field handles
 
-	$query->select('name, 4, 12, comments:items'); // mixture of handles, IDs and fields with "modes" e.g. Bi-Link
+	$query->select('name, 4, 12, comments:items'); // mixture of handles, IDs and fields with "modes" e.g. Bi-Link Field
 
-	$query->select('system:count'); // count only
+	$query->select('system:count'); // count only, no entries
 
 ### `from`
 Specify the section from which entries should be queried. Accepts either a section handle or ID. For example:
@@ -39,45 +48,49 @@ Specify the section from which entries should be queried. Accepts either a secti
 	$query->from('articles');
 
 ### `where`
-Build a series of select criteria. Use DS-filtering syntax. Accepts a field (handle or ID), the filter value, and an optional type.For example:
+Build a series of select criteria. Use Symphony data source filtering syntax, although parameters using the curly-brace syntax (e.g. `{$root}`) are **not** supported. Accepts a field (handle or ID), the filter value, and an optional type. For example:
 
 	$query->where('published', 'yes'); // filters a checkbox with a Yes value
 
 	$query->where('title', 'regexp:CSS'); // text input REGEX filter
 
-As with a Data Source, filters combine at the SQL level with the AND keyword. Therefore using the two filters above would select entries where published=yes AND title is like CSS. If you want the filters to concatenate using the OR keyword, pass your preference as the optional third argument:
+As with a data source, filters combine at the SQL level with the AND keyword. Therefore using both of the filters above would select entries where published is Yes _and_ title is like CSS. If you want the filters to concatenate using the OR keyword, pass your preference as the optional third argument:
 
 	$query->where('title', 'regexp:Allen');
 	$query->where('title', 'regexp:Alistair', SymQL::DS_FILTER_OR);
 	$query->where('published', 'yes', SymQL::DS_FILTER_AND);
 
-The above will find published entries where the title matches either Nick or Dunn. Note that the default is `SymQL::DS_FILTER_AND` so this doesn't need to be set explicitly on the third `where` above.
+The above will find published entries where the title matches either `Allen` or `Alistair`. Note that the default is `SymQL::DS_FILTER_AND`.
 
-System parameters can also be filtered on, as with a normal Data Source:
+System parameters can also be filtered on, as with a normal data source:
 
 	$query->where('system:id', 15);
 
 	$query->where('system:date', 'today);
 
 ### `orderby`
-Specify sort and direction. Defaults to `system:id` in `desc` order. Use a valid field ID, handle or system pseudo-field (system:id, system:date). Direction values are 'asc', 'desc' or 'rand'. Case insensitive. 
+
+Specify sort and direction. Defaults to `system:id` in `desc` order. Use a valid field ID, handle or system pseudo-field (`system:id` or `system:date`). Direction values are 'asc', 'desc' or 'rand'. Case insensitive.
 
 	$query->orderby('system:date', 'asc');
 
 	$query->orderby('name', 'DESC');
 
 ### `perPage`
+
 Number of entries to limit by. If you don't want to use pagination, use this as an SQL `LIMIT`.
 
 	$query->perPage(20);
 
 ### `page`
+
 Which page of entries to return.
 
 	$query->page(2);
 
 ## Run the query!
-To run the SymQLQuery object, pass it to the SymQL's `run` method:
+
+To run the query, pass the `SymQLQuery` object to the `SymQL::run()` method:
 
 	$result = SymQL::run($query); // returns an XMLElement of matching entries
 
@@ -85,8 +98,8 @@ SymQL can return entries in four different flavours depending on how you want th
 
 	$result = SymQL::run($query, SymQL::RETURN_ENTRY_OBJECTS); // returns an array of Entry objects
 
-* `RETURN_XML` (default) returns an XMLElement object, almost identical to a Data Source output
-* `RETURN_ARRAY` returns the same structure as RETURN_XML above, but the XMLElement is converted into a PHP array
+* `RETURN_XML` (default) returns an XMLElement object, almost identical to a data source output
+* `RETURN_ARRAY` returns a PHP array (same structure as RETURN_XML, but entry XMLElements are converted into an array)
 * `RETURN_RAW_COLUMNS` returns the raw column values from the database for each field
 * `RETURN_ENTRY_OBJECTS` returns an array of Entry objects, useful for further processing
 
@@ -95,7 +108,8 @@ When using the default `RETURN_XML` type, the root element is named `symql` by d
 	$query = new SymQLQuery('element-name-here');
 
 ## A simple example
-Try this inside a customised Data Source. The DS should return $result, which by default is returned from SymQL as an XMLElement.
+
+Try this inside a customised data source. The data source should return $result, which by default is returned from SymQL as an XMLElement.
 
 	// include SymQL
 	require_once(EXTENSIONS . '/symql/lib/class.symql.php');
@@ -110,18 +124,30 @@ Try this inside a customised Data Source. The DS should return $result, which by
 		->perPage(10)
 		->page(1);
 		
-	// run it! by default an XMLElement is returned
 	$result = SymQL::run($query);
 
 ## Debugging
-Basic debug information can be ascertained by calling `SymQL::getDebug()` after running your query. It returns an array of query counts and SQL fragments.
+Basic debug information can be returned by calling `SymQL::getDebug()` after running your query. It returns an array of query counts and SQL fragments.
 
 	var_dump(SymQL::getDebug());die;
 
-### Known issues
-* none as of 0.6
+## Known issues
 
-### Changelog
+* none as of 0.6. But that doesn't mean there aren't bugs left to discover...
+
+## Compatibility
+
+Symphony | SymQL
+------------- | -------------
+2.0 ‚Äì 2.0.7 | Not compatible
+2.0.7 ‚Äì 2.1.* | [0.6](https://github.com/nickdunn/symql/commits/0.6)
+2.2.* | [latest](https://github.com/nickdunn/symql)
+
+## Changelog
+
+* 0.6.1, 16 February 2011
+	* made use of Symphony 2.2's `Symphony::Engine()` to determine frontend/administration context
+	* README and code comment updates
 
 * 0.6, 05 January 2010
 	* renamed the AND/OR enumerators for clarity
