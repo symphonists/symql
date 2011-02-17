@@ -139,8 +139,8 @@ Basic debug information can be returned by calling `SymQL::getDebug()` after run
 
 Symphony | SymQL
 ------------- | -------------
-2.0 ‚Äì 2.0.7 | Not compatible
-2.0.7 ‚Äì 2.1.* | [0.6](https://github.com/nickdunn/symql/commits/0.6)
+2.0 — 2.0.7 | Not compatible
+2.0.7 — 2.1.* | [0.6](https://github.com/nickdunn/symql/commits/0.6)
 2.2.* | [latest](https://github.com/nickdunn/symql)
 
 ## Changelog
