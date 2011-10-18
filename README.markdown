@@ -1,10 +1,5 @@
 # SymQL
 
-* Version: 0.6.1
-* Author: [Nick Dunn](http://nick-dunn.co.uk)
-* Build Date: 2011-02-16
-* Requirements: Symphony 2.2
-
 ## Rationale
 
 Querying entries within your own PHP applications can be a hit-and-miss affair. Building the JOINs of field tables is time consuming, but a necessary evil even if you want to use the `EntryManager` class (which requires you to pass JOINs and WHERE strings of SQL to it). SymQL continues what [DatabaseManipulator](http://github.com/yourheropaul/databasemanipulator/) started, and is intended as a full replacement.
@@ -134,43 +129,3 @@ Basic debug information can be returned by calling `SymQL::getDebug()` after run
 ## Known issues
 
 * none as of 0.6. But that doesn't mean there aren't bugs left to discover...
-
-## Compatibility
-
-Symphony | SymQL
-------------- | -------------
-2.0 — 2.0.7 | Not compatible
-2.0.7 — 2.1.* | [0.6](https://github.com/nickdunn/symql/commits/0.6)
-2.2.* | [latest](https://github.com/nickdunn/symql)
-
-## Changelog
-
-* 0.6.1, 16 February 2011
-	* made use of Symphony 2.2's `Symphony::Engine()` to determine frontend/administration context
-	* README and code comment updates
-
-* 0.6, 05 January 2010
-	* renamed the AND/OR enumerators for clarity
-	* added ability to change the root element when XML is returned
-
-* 0.5, 11 December 2009
-	* fixed driver PHP syntax error (thanks brendo)
-	* improved conversion of XMLElement to array for RETURN_ARRAY output
-	* SymQL maintains a cached reference to resolved sections/fields to reduce query counts
-
-* 0.4, 08 December 2009
-	* fixed bug that prevented multiple filters on the same field
-	* tidied private variable naming
-	* added debug logging for query counts and SQL fragments
-
-* 0.3, 07 December 2009
-	* SymQL is now a static class
-
-* 0.2, 07 December 2009
-	* changed `count` to `select:count` to avoid naming conflicts
-	* renamed RETURN_FIELDS to RETURN_ENTRY_OBJECTS and RETURN_RAW to RETURN_RAW_COLUMNS for clarity
-	* updated documentation
-	* fixed extension.driver.php
-
-* 0.1, 05 December 2009
-	* initial release. Woo! Yay! Fanfare.
