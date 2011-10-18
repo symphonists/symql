@@ -2,7 +2,7 @@
 <extension id="symql">
 	<name>SymQL</name>
 	<description>Symphony Query Language lets you query sections with an SQL-like syntax. Useful for writing custom data sources.</description>
-	<url type="repo">https://github.com/nickdunn/symql</url>
+	<repo type="github">https://github.com/nickdunn/symql</repo>
 	<url type="discuss">http://symphony-cms.com/discuss/thread/37008/</url>
 	<types>
 		<type>Other</type>
