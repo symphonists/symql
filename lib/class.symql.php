@@ -3,7 +3,7 @@
 require_once(TOOLKIT . '/class.entrymanager.php');
 
 require_once('class.symqlquery.php');
-require_once('class.xmltoarray.php');
+if(!class_exists('XMLToArray')) require_once('class.xmltoarray.php');
 
 Class SymQL {
 	
