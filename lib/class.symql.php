@@ -24,10 +24,6 @@ Class SymQL {
 	const DS_FILTER_AND = 1;
 	const DS_FILTER_OR = 2;
 	
-	private static $_entryManager = NULL;
-	private static $_sectionManager = NULL;
-	private static $_fieldManager = NULL;
-	
 	private static $_resolved_sections = array();
 	private static $_resolved_fields = array();
 	
@@ -37,12 +33,6 @@ Class SymQL {
 		if (!(self::$_instance instanceof SymQL)) {
 			self::$_instance = new self;
 		}
-	}
-	
-	public function __construct() {
-		self::$_entryManager = new EntryManager(Symphony::Engine());
-		self::$_sectionManager = self::$_entryManager->sectionManager;
-		self::$_fieldManager = self::$_entryManager->fieldManager;
 	}
 	
 	public function debug($enabled=TRUE) {
@@ -105,12 +95,12 @@ Class SymQL {
 	
 	private static function getQueryCount() {
 		if (is_null(self::$_cumulative_querycount)) {
-			self::$_base_querycount = Symphony::Engine()->Database()->queryCount();
-			self::$_cumulative_querycount = Symphony::Engine()->Database()->queryCount();
+			self::$_base_querycount = Symphony::Database()->queryCount();
+			self::$_cumulative_querycount = Symphony::Database()->queryCount();
 			return 0;
 		}
-		$count = Symphony::Engine()->Database()->queryCount() - self::$_cumulative_querycount;
-		self::$_cumulative_querycount = Symphony::Engine()->Database()->queryCount();
+		$count = Symphony::Database()->queryCount() - self::$_cumulative_querycount;
+		self::$_cumulative_querycount = Symphony::Database()->queryCount();
 		return $count;
 	}
 	
@@ -136,8 +126,8 @@ Class SymQL {
 		
 		if (is_null($resolved_section)) {
 			$section = $query->section;
-			if (!is_numeric($query->section)) $section = self::$_sectionManager->fetchIDFromHandle($query->section);
-			$section = self::$_sectionManager->fetch($section);
+			if (!is_numeric($query->section)) $section = SectionManager::fetchIDFromHandle($query->section);
+			$section = SectionManager::fetch($section);
 			if (!$section instanceof Section) throw new Exception(sprintf("%s: section '%s' does not not exist", __CLASS__, $query->section));
 			$fields = $section->fetchFields();
 			self::$_resolved_sections[] = $section;
@@ -184,13 +174,13 @@ Class SymQL {
 		if (in_array($query->sort_field, self::$_reserved_fields)) {
 			$handle_exploded = explode(':', $query->sort_field);
 			if (count($handle_exploded) == 2) {
-				self::$_entryManager->setFetchSorting(end($handle_exploded), $query->sort_direction);
+				EntryManager::setFetchSorting(end($handle_exploded), $query->sort_direction);
 			}
 		} else {
 			$sort_field = self::indexFieldsByID($query->sort_field, $fields);
 			$sort_field = $section_fields[reset(array_keys($sort_field))];
 			if ($sort_field && $sort_field->isSortable()) {
-				self::$_entryManager->setFetchSorting($sort_field->get('id'), $query->sort_direction);
+				EntryManager::setFetchSorting($sort_field->get('id'), $query->sort_direction);
 			}
 		}
 		
@@ -238,7 +228,7 @@ Class SymQL {
 		// resolve the SELECT type and fetch entries
 		if (reset(array_keys($select_fields)) == 'system:count') {
 			$select_type = SymQL::SELECT_COUNT;
-			$fetch_result = (int)self::$_entryManager->fetchCount(
+			$fetch_result = (int)EntryManager::fetchCount(
 				$section->get('id'),
 				$where,
 				$joins
@@ -247,7 +237,7 @@ Class SymQL {
 
 		else if (count($entry_ids) > 0) {
 			$select_type = SymQL::SELECT_ENTRY_ID;
-			$fetch_result = self::$_entryManager->fetch(
+			$fetch_result = EntryManager::fetch(
 				$entry_ids, // entry_id
 				$section->get('id'), // section_id
 				NULL, // limit
@@ -264,7 +254,7 @@ Class SymQL {
 		// $page = 1, $section_id, $entriesPerPage, $where = null, $joins = null, $group = false, $records_only = false, $buildentries = true, Array $element_names = null
 		else {
 			$select_type = SymQL::SELECT_ENTRIES;
-			$fetch_result = self::$_entryManager->fetchByPage(
+			$fetch_result = EntryManager::fetchByPage(
 				$query->page, // page
 				$section->get('id'), // section_id
 				$query->per_page, // entriesPerPage
@@ -402,10 +392,10 @@ Class SymQL {
 			}
 		}
 		
-		self::$_debug['queries']['Total'] = Symphony::Engine()->Database()->queryCount() - self::$_base_querycount;
+		self::$_debug['queries']['Total'] = Symphony::Database()->queryCount() - self::$_base_querycount;
 		
 		// reset for the next query
-		self::$_entryManager->setFetchSorting(NULL, NULL);
+		EntryManager::setFetchSorting(NULL, NULL);
 		self::$_base_querycount = NULL;
 		self::$_cumulative_querycount = NULL;
 		
