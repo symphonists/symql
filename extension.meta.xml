@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<extension id="symql">
+<extension id="symql" status="released" xmlns="http://symphony-cms.com/schemas/extension/1.0">
 	<name>SymQL</name>
 	<description>Symphony Query Language lets you query sections with an SQL-like syntax. Useful for writing custom data sources.</description>
 	<repo type="github">https://github.com/nickdunn/symql</repo>
