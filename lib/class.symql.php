@@ -177,14 +177,17 @@ Class SymQL {
 			
 			// Get the WHERE and JOIN from the field
 			$where_before = $_where;
-			$field->buildDSRetrivalSQL(array($filter['value']), $_joins, $_where, ($filter_type == self::DS_FILTER_AND ? TRUE : FALSE));
+			$field->buildDSRetrievalSQL(array($filter['value']), $_joins, $_where, ($filter_type == self::DS_FILTER_AND ? TRUE : FALSE));
 			
 			// HACK: if this is an OR statement, strip the first AND from the returned SQL
 			// and replace with OR. This is quite brittle, but the only way I could think of
 			if ($filter['type'] == SymQL::DS_FILTER_OR) {
+				// get the most recent SQL added
 				$_where_after = substr($_where, strlen($_where_before), strlen($where));
+				// replace leading AND with OR
 				$_where_after = preg_replace('/^AND/', 'OR', trim($_where_after));
-				$_where = $_where_before . $_where_after;
+				// re-append
+				$_where = $_where_before . ' ' . $_where_after;
 			}
 			
 			$joins .= $_joins;
