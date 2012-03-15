@@ -24,35 +24,10 @@ Class SymQL {
 	const DS_FILTER_AND = 1;
 	const DS_FILTER_OR = 2;
 	
-	private static $_resolved_sections = array();
-	private static $_resolved_fields = array();
-	
 	private static $_reserved_fields = array('*', 'system:count', 'system:id', 'system:date');
-	
-	private static function init() {
-		if (!(self::$_instance instanceof SymQL)) {
-			self::$_instance = new self;
-		}
-	}
 	
 	public function debug($enabled=TRUE) {
 		self::$_debug = $enabled;
-	}
-	
-	private function getResolvedSection($section) {
-		foreach(self::$_resolved_sections as $s) {
-			if ((is_numeric($section) && (int)$section == $s->get('id')) || $section == $s->get('handle')) {
-				return $s;
-			}
-		}
-	}
-	
-	private function getResolvedFields($section_id) {
-		foreach(self::$_resolved_sections as $s) {
-			if ((int)$section_id == $s->get('id')) {
-				return self::$_resolved_fields[$section_id];
-			}
-		}
 	}
 	
 	/*
@@ -110,8 +85,6 @@ Class SymQL {
 	
 	public static function run(SymQLQuery $query, $output=SymQL::RETURN_XML) {
 		
-		self::init();
-		
 		self::getQueryCount();
 		
 		// stores all config locally so that the same SymQL instance can be used for mutliple queries
@@ -121,22 +94,15 @@ Class SymQL {
 		$joins = NULL;			
 		$entry_ids = array();
 		
-		// resolve section
-		$resolved_section = self::getResolvedSection($query->section);
+		// get a section's ID if it was specified by its handle
+		if (!is_numeric($query->section)) $query->section = SectionManager::fetchIDFromHandle($query->section);
 		
-		if (is_null($resolved_section)) {
-			$section = $query->section;
-			if (!is_numeric($query->section)) $section = SectionManager::fetchIDFromHandle($query->section);
-			$section = SectionManager::fetch($section);
-			if (!$section instanceof Section) throw new Exception(sprintf("%s: section '%s' does not not exist", __CLASS__, $query->section));
-			$fields = $section->fetchFields();
-			self::$_resolved_sections[] = $section;
-			self::$_resolved_fields[$section->get('id')] = $fields;
-		}
-		else {
-			$section = $resolved_section;
-			$fields = self::getResolvedFields($section->get('id'));
-		}
+		// get the section
+		$section = SectionManager::fetch($query->section);
+		if (!$section instanceof Section) throw new Exception(sprintf("%s: section '%s' does not not exist", __CLASS__, $query->section));
+		
+		// cache the section's fields
+		$fields = $section->fetchFields();
 		
 		self::$_debug['queries']['Resolve section and fields'] = self::getQueryCount();
 		
