@@ -2,12 +2,15 @@
 <extension id="symql" status="released" xmlns="http://symphony-cms.com/schemas/extension/1.0">
 	<name>SymQL</name>
 	<description>Symphony Query Language lets you query sections with an SQL-like syntax. Useful for writing custom data sources.</description>
-	<repo type="github">https://github.com/nickdunn/symql</repo>
+	<repo type="github">https://github.com/symphonists/symql</repo>
 	<url type="discuss">http://symphony-cms.com/discuss/thread/37008/</url>
 	<types>
 		<type>Other</type>
 	</types>
 	<authors>
+		<author>
+        		<name github="symphonists" symphony="community">Symphony Community</name>
+    		</author>
 		<author>
 			<name github="nickdunn" symphony="nickdunn">Nick Dunn</name>
 			<website>http://nick-dunn.co.uk</website>
