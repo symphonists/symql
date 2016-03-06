@@ -3,13 +3,14 @@
 	<name>SymQL</name>
 	<description>Symphony Query Language lets you query sections with an SQL-like syntax. Useful for writing custom data sources.</description>
 	<repo type="github">https://github.com/symphonists/symql</repo>
-	<url type="discuss">http://symphony-cms.com/discuss/thread/37008/</url>
+	<url type="discuss">http://www.getsymphony.com/discuss/thread/37008/</url>
 	<types>
 		<type>Other</type>
 	</types>
 	<authors>
 		<author>
 			<name github="symphonists" symphony="community">Symphony Community</name>
+			<website>http://www.getsymphony.com/</website>
 		</author>
 		<author>
 			<name github="nickdunn" symphony="nickdunn">Nick Dunn</name>
