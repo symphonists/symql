@@ -17,6 +17,9 @@
 		</author>
 	</authors>
 	<releases>
+		<release version="0.7.2" date="2016-03-06" min="2.3.x" max="2.x.x">
+			- Symphony 2.x.x compatibility
+		</release>
 		<release version="0.7.1" date="2015-12-02" min="2.3.x">
 			- Corrected deprecated method name (#3)
 		</release>
